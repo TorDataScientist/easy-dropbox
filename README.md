@@ -22,7 +22,7 @@ Here's what you can do with easy-dropbox today:
 - Folder / file search(フォルダ・ファイル検索)
 - Create a new folder(フォルダの作成)
 - Save file(ファイルの保存)
-- Generating shared links for folders and files(フォルダ・ファイルの共有リンクの生成
+- Generating shared links for folders and files(フォルダ・ファイルの共有リンクの生成)
 
 # **Installation[インストール]**
 
@@ -64,7 +64,7 @@ upload_path # esample : '/app/sample/folder1/folder2'
 upload_file # esample : '/home/user/sample.txt'
 ed.upload(upload_path, upload_file, make_new_path = True):
 ```
-## 2.4. Generating shared links for folders and files[フォルダ・ファイル]
+## 2.4. Generating shared links for folders and files[フォルダ・ファイルの共有リンクの生成]
 ```python
 path = ['File or folder path(ファイルもしくはフォルダのパス)'] # esample : '/app/sample/folder1'
 ed.get_shared_link(path)
