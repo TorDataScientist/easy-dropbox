@@ -1,3 +1,4 @@
+LICENSE
 README.md
 setup.py
 easy_dropbox.egg-info/PKG-INFO
@@ -7,4 +8,3 @@ easy_dropbox.egg-info/requires.txt
 easy_dropbox.egg-info/top_level.txt
 ezdbx/__init__.py
 ezdbx/main.py
-test/test_ezdbx.py
