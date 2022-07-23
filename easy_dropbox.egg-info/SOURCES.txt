@@ -1,4 +1,3 @@
-LICENSE
 README.md
 setup.py
 easy_dropbox.egg-info/PKG-INFO

@@ -23,7 +23,7 @@ setup(
     license="MIT License",
     description="You can easily operate Dropbox!",
     long_description=long_description,
-    long_description_content_type='README.md',
+    long_description_content_type='text/markdown',
     author='TorDataScientist',
     url='https://github.com/TorDataScientist/easy-dropbox',
     packages=packages,
