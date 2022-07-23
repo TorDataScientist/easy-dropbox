@@ -1,0 +1,6 @@
+# Generic Python files
+/build/
+
+/dist/
+
+*.egg-info/
