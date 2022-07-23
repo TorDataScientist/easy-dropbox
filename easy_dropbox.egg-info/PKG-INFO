@@ -1,3 +1,14 @@
+Metadata-Version: 2.1
+Name: easy-dropbox
+Version: 1.0.0
+Summary: You can easily operate Dropbox!
+Home-page: https://github.com/TorDataScientist/easy-dropbox
+Author: TorDataScientist
+License: MIT License
+Platform: UNKNOWN
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
 <div align="center">
 <img src="https://user-images.githubusercontent.com/45032597/138818248-359196b7-0015-4f15-9888-e282d80c5887.png" height="200" align="center">
 </div>
@@ -69,5 +80,7 @@ ed.upload(upload_path, upload_file, make_new_path = True):
 path = ['File or folder path(ファイルもしくはフォルダのパス)'] # esample : '/app/sample/folder1'
 ed.get_shared_link(path)
 ```
+
+
 
 
