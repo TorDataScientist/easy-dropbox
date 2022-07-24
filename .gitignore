@@ -1,6 +1,9 @@
 # Generic Python files
-/build/
+build/
 
-/dist/
+dist/
 
+__pycache__/
 *.egg-info/
+
+backup.py

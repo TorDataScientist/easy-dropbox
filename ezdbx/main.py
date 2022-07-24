@@ -3,12 +3,12 @@ import dropbox
 import requests
 import time
 import glob
-import tqdm
+from tqdm import tqdm
 
 # Issuance of access token. (アクセストークンの発行)
 def Issue_access_token(APP_KEY, APP_SECRET):
     print(f'https://www.dropbox.com/oauth2/authorize?client_id={APP_KEY}&response_type=code')
-    AUTHORIZATION_CODE = input()
+    AUTHORIZATION_CODE = input('AUTHORIZATION_CODE : ')
     data = {'code': AUTHORIZATION_CODE, 'grant_type': 'authorization_code'}
     response = requests.post('https://api.dropbox.com/oauth2/token', data=data, auth=(APP_KEY, APP_SECRET))
     DROPBOX_ACCESS_TOKEN = response.json()['access_token']
@@ -81,7 +81,7 @@ class EzDbx():
 
     # File upload. (ファイルのウップロード) ------------------------------------------------------------------------------------------------------------
 
-    def upload(self, upload_path, upload_file, make_new_path = True):
+    def upload(self, upload_path, upload_file, make_new_path = True, overwrite = False):
         '''
         Function to upload a file. (ファイルのアップロードを行う関数)
         upload_path[str]: Save destination starting with'/'. ('/' から始まる保存先)
@@ -92,17 +92,20 @@ class EzDbx():
             if make_new_path: self.make_folder(upload_path)
             else : assert 'Uploading is not possible because there is no path to the save destination.\n保存先までのパスがないためアップロードできません。' 
         db_upload_file = upload_file.split('/')[-1] 
+        self.get_files(upload_path, 'file', recursive = True, save = False, reset = False, output = False)
+        if f'{upload_path}/{db_upload_file}' in [entry.path_display for entry in self.__tmp_entry_list]:
+            if not overwrite: assert 'The file already exists. To overwrite, set "overwrite = True".\n既にファイルが存在します。上書きする場合は"overwrite = True"にしてください。' 
         with open(upload_file, "rb") as f: 
             file_size = os.path.getsize(upload_file) 
             print(f'{db_upload_file} : {file_size} byte')
-            chunk_size = 4 * 1024 * 1024
+            chunk_size = 100 * 1024 * 1024
             if file_size <= chunk_size: self.__upload_file(upload_path, upload_file) 
             else: 
                 with tqdm(total=file_size, desc="Uploaded") as pbar: 
                     upload_session_start_result = self.dbx.files_upload_session_start(f.read(chunk_size))
                     pbar.update(chunk_size)
                     cursor = dropbox.files.UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
-                    commit = dropbox.files.CommitInfo(path=f'{upload_path}/{db_upload_file}')
+                    commit = dropbox.files.CommitInfo(path=f'{upload_path}/{db_upload_file}', mode=dropbox.files.WriteMode('overwrite'))
                     while f.tell() < file_size:
                         if (file_size - f.tell()) <= chunk_size: print(self.dbx.files_upload_session_finish(f.read(chunk_size), cursor, commit))
                         else:
@@ -126,7 +129,7 @@ class EzDbx():
     def __upload_file(self, upload_path, upload_file):
         db_upload_file = upload_file.split('/')[-1] 
         remote = f'{upload_path}/{db_upload_file}'
-        with open(upload_file, 'rb') as f: self.dbx.files_upload(f.read(), remote)
+        with open(upload_file, 'rb') as f: self.dbx.files_upload(f.read(), remote, mode=dropbox.files.WriteMode('overwrite'))
         return True
 
     # Read file. (ファイルの読み込み) ------------------------------------------------------------------------------------------------------------
