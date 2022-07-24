@@ -18,14 +18,14 @@ packages = [
 ]
 
 setup(
-    name='easy-dropbox',
-    version='1.0.1',
+    name='ez-dropbox',
+    version='1.0.0',
     license="MIT License",
     description="You can easily operate Dropbox!",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='TorDataScientist',
-    url='https://github.com/TorDataScientist/easy-dropbox',
+    url='https://github.com/TorDataScientist/ez-dropbox',
     packages=packages,
     install_requires=_requires_from_file('requirements.txt')
     #entry_points={'console_scripts': console_scripts},

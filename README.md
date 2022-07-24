@@ -6,9 +6,9 @@
 **I have summarized the operations that are often used in drop boxes for ease of use!**  
 **ドロップボックスでよく使われる操作を使いやすいようにまとめました！**
 
-![](https://img.shields.io/pypi/v/easy-dropbox?style=plastic)
-![](https://img.shields.io/github/forks/TorDataScientist/easy-dropbox?style=plastic)
-![](https://img.shields.io/github/license/TorDataScientist/easy-dropbox?style=plastic)
+![](https://img.shields.io/pypi/v/ez-dropbox?style=plastic)
+![](https://img.shields.io/github/forks/TorDataScientist/ez-dropbox?style=plastic)
+![](https://img.shields.io/github/license/TorDataScientist/ez-dropbox?style=plastic)
 
 
 # **OutLine[概要]**
@@ -27,7 +27,7 @@ Here's what you can do with easy-dropbox today:
 # **Installation[インストール]**
 
 ```bash
-pip install easy-dropbox
+pip install ez-dropbox
 ```
 
 # **Use library[ライブラリの使用方法]**
