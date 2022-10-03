@@ -37,6 +37,7 @@ class EzDbx():
         if reset : self.__reset_entry_list()
         try : 
           res = self.dbx.files_list_folder(db_root_dir, recursive=recursive, limit = 2000) # 初めのアクセスを行う
+          self.__save_path_list(res, file_or_folder)
           if res.has_more: self.__get_files_recursive(res, file_or_folder) # Recursive processing. (再帰処理)
           if save: self.entry_list = self.__tmp_entry_list # Save. (保存を行う)
           if output: return self.visible_path() # Return value. (戻り値)
