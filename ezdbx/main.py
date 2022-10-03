@@ -20,6 +20,7 @@ class EzDbx():
         self.dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN, timeout=300)
         self.entry_list = [] 
         self.__tmp_entry_list = []
+        self.error_file_path = []
 
     # Get folder and file information. (フォルダやファイル情報を取得する) ------------------------------------------------------------------------------------------
     def get_files(self, db_root_dir, file_or_folder, recursive = False, save = True, reset = True, output = True):
@@ -32,12 +33,14 @@ class EzDbx():
         output[bool]: Whether to do the final visualization output. (最終的な可視化出力を行うかどうか)
         '''
         self.__tmp_entry_list = []
+        res = ''
         if reset : self.__reset_entry_list()
-        try : res = self.dbx.files_list_folder(db_root_dir, recursive=recursive, limit = 2000) # 初めのアクセスを行う
-        except : assert 'There is no path. (パスがありません。)'
-        self.__get_files_recursive(res, file_or_folder) # Recursive processing. (再帰処理)
-        if save: self.entry_list = self.__tmp_entry_list # Save. (保存を行う)
-        if output: return self.visible_path() # Return value. (戻り値)
+        try : 
+          res = self.dbx.files_list_folder(db_root_dir, recursive=recursive, limit = 2000) # 初めのアクセスを行う
+          if res.has_more: self.__get_files_recursive(res, file_or_folder) # Recursive processing. (再帰処理)
+          if save: self.entry_list = self.__tmp_entry_list # Save. (保存を行う)
+          if output: return self.visible_path() # Return value. (戻り値)
+        except : assert False, 'There is no path. (パスがありません。)'
 
     # Recursive acquisition of folder and file information. (フォルダやファイル情報の再帰取得を行う)
     def __get_files_recursive(self, res, file_or_folder):
@@ -57,7 +60,7 @@ class EzDbx():
                 if ins is dropbox.files.FileMetadata: continue 
                 self.__tmp_entry_list.append(entry)
             elif file_or_folder == 'all': self.__tmp_entry_list.append(entry) 
-            else: assert 'You are using a string that is not specified in the first argument.\n第一引数に指定されていない文字列を使用しています。\nAvailable strings are "file", "folder", "all".\n使用可能な文字列は"file","folder","all"のいずれかです。'
+            else: assert False, 'You are using a string that is not specified in the first argument.\n第一引数に指定されていない文字列を使用しています。\nAvailable strings are "file", "folder", "all".\n使用可能な文字列は"file","folder","all"のいずれかです。'
 
     # Visualize read folder and file information. (読み込んだフォルダやファイル情報を可視化) ------------------------------------------------------------------------------------------
     def visible_path(self):
@@ -81,41 +84,57 @@ class EzDbx():
 
     # File upload. (ファイルのウップロード) ------------------------------------------------------------------------------------------------------------
 
-    def upload(self, upload_path, upload_file, make_new_path = True, overwrite = False):
+    def upload(self, upload_path, upload_file, make_new_path = True, overwrite = False, skip = False):
         '''
         Function to upload a file. (ファイルのアップロードを行う関数)
-        upload_path[str]: Save destination starting with'/'. ('/' から始まる保存先)
-        upload_file[str]: Save file. You can start with a folder, but the file is placed directly under upload_path in the save hierarchy. (保存ファイル。フォルダなどから始まっても良いが、保存階層はupload_pathの直下にファイルが置かれる。)
+        upload_path[list]: Save destination starting with'/'. ('/' から始まる保存先)
+        upload_file[list]: Save file. You can start with a folder, but the file is placed directly under upload_path in the save hierarchy. (保存ファイル。フォルダなどから始まっても良いが、保存階層はupload_pathの直下にファイルが置かれる。)
         make_new_path[bool]: Whether to create if there is no path to the save destination. (保存先までのpathがない場合作成するかどうか)
         '''
-        if not self.__check_up_path(upload_path): # Check if there is a save destination path. (保存先のpathがあるかどうかを調べる)
-            if make_new_path: self.make_folder(upload_path)
-            else : assert 'Uploading is not possible because there is no path to the save destination.\n保存先までのパスがないためアップロードできません。' 
-        db_upload_file = upload_file.split('/')[-1] 
-        self.get_files(upload_path, 'file', recursive = True, save = False, reset = False, output = False)
-        if f'{upload_path}/{db_upload_file}' in [entry.path_display for entry in self.__tmp_entry_list]:
-            if not overwrite: assert 'The file already exists. To overwrite, set "overwrite = True".\n既にファイルが存在します。上書きする場合は"overwrite = True"にしてください。' 
-        with open(upload_file, "rb") as f: 
-            file_size = os.path.getsize(upload_file) 
-            print(f'{db_upload_file} : {file_size} byte')
-            chunk_size = 100 * 1024 * 1024
-            if file_size <= chunk_size: self.__upload_file(upload_path, upload_file) 
-            else: 
-                with tqdm(total=file_size, desc="Uploaded") as pbar: 
-                    upload_session_start_result = self.dbx.files_upload_session_start(f.read(chunk_size))
-                    pbar.update(chunk_size)
-                    cursor = dropbox.files.UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
-                    commit = dropbox.files.CommitInfo(path=f'{upload_path}/{db_upload_file}', mode=dropbox.files.WriteMode('overwrite'))
-                    while f.tell() < file_size:
-                        if (file_size - f.tell()) <= chunk_size: print(self.dbx.files_upload_session_finish(f.read(chunk_size), cursor, commit))
-                        else:
-                            self.dbx.files_upload_session_append(f.read(chunk_size), cursor.session_id, cursor.offset)
-                            cursor.offset = f.tell()
-                        pbar.update(chunk_size)
+
+        if len(upload_path) != len(upload_file):
+            assert False, 'Uploading is not possible because there is no path to the save destination.\n保存先までのパスがないためアップロードできません。' 
+        tmp_memory = 'None'
+        for i in range(len(upload_path)):
+            if tmp_memory != f"/{upload_path[i].split('/')[1]}":
+                tmp_memory = f"/{upload_path[i].split('/')[1]}"
+                if not self.__check_up_path(tmp_memory): # Check if there is a save destination path. (保存先のpathがあるかどうかを調べる)
+                    if make_new_path: self.make_folder(upload_path[i])
+                    else : assert False, 'Uploading is not possible because there is no path to the save destination.\n保存先までのパスがないためアップロードできません。'
+
+            db_upload_file = upload_file[i].split('/')[-1] 
+            #self.get_files(upload_path[i], 'file', recursive = True, save = False, reset = False, output = False)
+            if f'{upload_path[i]}/{db_upload_file}' in [entry.path_display for entry in self.entry_list]:
+                if skip :
+                    print(f'{db_upload_file} は既に存在しているのでスキップします。')
+                    continue
+                assert overwrite, 'The file already exists. To overwrite, set "overwrite = True".\n既にファイルが存在します。上書きする場合は"overwrite = True"にしてください。' 
+
+            try :
+                with open(upload_file[i], "rb") as f: 
+                    file_size = os.path.getsize(upload_file[i]) 
+                    print(f'{db_upload_file} : {file_size} byte')
+                    chunk_size = 100 * 1024 * 1024
+                    if file_size <= chunk_size: self.__upload_file(upload_path[i], upload_file[i]) 
+                    else: 
+                        with tqdm(total=file_size, desc="Uploaded") as pbar: 
+                            upload_session_start_result = self.dbx.files_upload_session_start(f.read(chunk_size))
+                            pbar.update(chunk_size)
+                            cursor = dropbox.files.UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
+                            commit = dropbox.files.CommitInfo(path=f'{upload_path[i]}/{db_upload_file}', mode=dropbox.files.WriteMode('overwrite'))
+                            while f.tell() < file_size:
+                                if (file_size - f.tell()) <= chunk_size: print(self.dbx.files_upload_session_finish(f.read(chunk_size), cursor, commit))
+                                else:
+                                    self.dbx.files_upload_session_append(f.read(chunk_size), cursor.session_id, cursor.offset)
+                                    cursor.offset = f.tell()
+                                pbar.update(chunk_size)
+            except Exception as e:
+                print(f'{upload_path[i]}/{db_upload_file}は保存できません。')
+                self.error_file_path.append(db_upload_file)
 
     # Check if there is a save destination path. (保存先のpathがあるかどうかを調べる)
     def __check_up_path(self, upload_path):
-        try : self.get_files(upload_path, 'all', recursive = True, save = False, reset = False, output = False) # Get the path of the save destination recursively. (保存先のpathを再起的に取得する)
+        try : self.get_files(upload_path, 'all', recursive = True, save = True, reset = False, output = False) # Get the path of the save destination recursively. (保存先のpathを再起的に取得する)
         except : return False
         else : return True
 
