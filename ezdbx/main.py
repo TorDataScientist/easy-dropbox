@@ -8,7 +8,7 @@ import joblib
 from tqdm import tqdm
 
 # Issuance of access token. (アクセストークンの発行)
-def Issue_access_token(APP_KEY, APP_SECRET):
+def issue_access_token(APP_KEY, APP_SECRET):
     print(f'https://www.dropbox.com/oauth2/authorize?client_id={APP_KEY}&response_type=code')
     AUTHORIZATION_CODE = input('AUTHORIZATION_CODE : ')
     data = {'code': AUTHORIZATION_CODE, 'grant_type': 'authorization_code'}
