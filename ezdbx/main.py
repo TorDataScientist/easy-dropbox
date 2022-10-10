@@ -35,11 +35,11 @@ def create_refresh_access_token_file(APP_KEY, APP_SECRET, save_file_path):
     print(f'create {save_file_path} success!')
 
 # 更新トークンファイルでアクセスキーの更新＆取得
-def refresh_token(path):
-    rdbx = joblib.load(path)
+def refresh_token(load_path):
+    rdbx = joblib.load(load_path)
     rdbx.refresh_access_token()
-    joblib.dump(rdbx, path, compress=3)
-    print(f'update {save_file_path} success!')
+    joblib.dump(rdbx, load_path, compress=3)
+    print(f'update {load_path} success!')
     return rdbx._oauth2_access_token
 
 # Class that operates the drop box. (ドロップボックスを操作するクラス)
