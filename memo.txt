@@ -1,0 +1,5 @@
+# 忘れっぽいのでPyPIの登録手順をメモしておく
+
+pip install wheel twine
+python setup.py sdist bdist_wheel
+twine upload --repository pypi dist/*

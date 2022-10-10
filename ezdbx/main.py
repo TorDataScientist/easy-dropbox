@@ -1,8 +1,10 @@
 import os
 import dropbox
+from dropbox import DropboxOAuth2FlowNoRedirect
 import requests
 import time
 import glob
+import joblib
 from tqdm import tqdm
 
 # Issuance of access token. (アクセストークンの発行)
@@ -13,6 +15,32 @@ def Issue_access_token(APP_KEY, APP_SECRET):
     response = requests.post('https://api.dropbox.com/oauth2/token', data=data, auth=(APP_KEY, APP_SECRET))
     DROPBOX_ACCESS_TOKEN = response.json()['access_token']
     return DROPBOX_ACCESS_TOKEN
+
+# 更新トークンファイルの生成
+def create_refresh_access_token_file(APP_KEY, APP_SECRET, save_file_path):
+    auth_flow = DropboxOAuth2FlowNoRedirect(
+                            APP_KEY,
+                            consumer_secret=APP_SECRET, # PKCEがFalseの場合に必要
+                            use_pkce=False, # Trueだとシークレットキーは不要
+                            token_access_type='offline'
+    )
+    print(auth_flow.start())
+    print('Access URL and get authentication code')
+    authentication_code = input('authentication code : ')
+    oauth_result = auth_flow.finish(authentication_code)
+    rdbx = dropbox.Dropbox(oauth2_refresh_token=oauth_result.refresh_token, app_key=APP_KEY, app_secret=APP_SECRET)
+    rdbx.users_get_current_account()
+    joblib.dump(rdbx, save_file_path, compress=3)
+
+    print(f'create {save_file_path} success!')
+
+# 更新トークンファイルでアクセスキーの更新＆取得
+def refresh_token(path):
+    rdbx = joblib.load(path)
+    rdbx.refresh_access_token()
+    joblib.dump(rdbx, path, compress=3)
+    print(f'update {save_file_path} success!')
+    return rdbx._oauth2_access_token
 
 # Class that operates the drop box. (ドロップボックスを操作するクラス)
 class EzDbx():
@@ -45,9 +73,9 @@ class EzDbx():
 
     # Recursive acquisition of folder and file information. (フォルダやファイル情報の再帰取得を行う)
     def __get_files_recursive(self, res, file_or_folder):
-        self.__save_path_list(res, file_or_folder)
         if res.has_more: # Whether there are still additional acquisitions. (まだ追加取得があるかどうか)
             res2 = self.dbx.files_list_folder_continue(res.cursor)
+            self.__save_path_list(res2, file_or_folder)
             self.__get_files_recursive(res2, file_or_folder) 
 
     # Save folder and file information. (フォルダやファイルの情報を保存する)
