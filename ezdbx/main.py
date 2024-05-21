@@ -4,6 +4,7 @@ import requests
 import joblib
 from tqdm import tqdm
 from datetime import datetime
+import zipfile
 
 # Issuance of access token. (アクセストークンの発行)
 def issue_access_token(APP_KEY, APP_SECRET):
@@ -197,8 +198,20 @@ class EzDbx:
             relative_path = os.path.relpath(local_file, local_folder)
             dropbox_path = os.path.join(dropbox_folder, relative_path).replace(os.sep, '/')
 
-            if dropbox_path in dropbox_files:
+            try:
+                # ファイルの最終更新日時を取得
                 local_mod_time = datetime.fromtimestamp(os.path.getmtime(local_file))
+            except OSError as e:
+                # ファイルを開けない場合はZIPアーカイブに圧縮してアップロード
+                print(f'Compressing file {local_file} due to error: {e}')
+                zip_path = local_file + '.zip'
+                with zipfile.ZipFile(zip_path, 'w') as zipf:
+                    zipf.write(local_file, os.path.basename(local_file))
+                self.upload(zip_path, os.path.dirname(dropbox_path), overwrite=True)
+                os.remove(zip_path)
+                continue
+
+            if dropbox_path in dropbox_files:
                 dropbox_mod_time = dropbox_files[dropbox_path]
                 if local_mod_time > dropbox_mod_time:
                     self.upload(local_file, os.path.dirname(dropbox_path), overwrite=True)
