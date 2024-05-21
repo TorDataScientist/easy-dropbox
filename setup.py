@@ -19,7 +19,7 @@ packages = [
 
 setup(
     name='ez-dropbox',
-    version='2.0.1',
+    version='2.0.2',
     license="MIT License",
     description="You can easily operate Dropbox!",
     long_description=long_description,
