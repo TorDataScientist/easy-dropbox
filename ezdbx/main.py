@@ -206,7 +206,9 @@ class EzDbx:
 
             if dropbox_path in dropbox_files:
                 dropbox_mod_time = dropbox_files[dropbox_path]
-                if local_mod_time > dropbox_mod_time:
+                if abs((local_mod_time - dropbox_mod_time).total_seconds()) < 2:
+                    print(f'Local file and Dropbox file are identical: {local_file}')
+                elif local_mod_time > dropbox_mod_time:
                     self.upload(local_file, os.path.dirname(dropbox_path), overwrite=True)
             else:
                 if local_mod_time is None:
@@ -237,6 +239,29 @@ class EzDbx:
                 local_mod_time = datetime.fromtimestamp(os.path.getmtime(local_path))
                 if local_mod_time < dropbox_mod_time:
                     self.download_file(dropbox_path, local_path)
+
+    def cleanup_local_files(self, local_folder, dropbox_folder):
+        """
+        保存に成功したファイルをローカルから削除します。
+        """
+        # ローカルファイルリストの取得
+        local_files = self._list_local_files(local_folder)
+        
+        # Dropbox内のファイルリストの取得
+        dropbox_files, _ = self._list_dropbox_files_and_folders(dropbox_folder, 'file')
+
+        # ローカルファイルリストとDropboxファイルリストの差分を取得
+        for local_file in local_files:
+            relative_path = os.path.relpath(local_file, local_folder)
+            dropbox_path = os.path.join(dropbox_folder, relative_path)
+            dropbox_path = os.path.normpath(dropbox_path)
+            
+            if dropbox_path in dropbox_files:
+                try:
+                    os.remove(local_file)
+                    print(f'{local_file} was successfully deleted from local storage.')
+                except Exception as e:
+                    print(f'Error deleting {local_file}: {e}')
 
     def check_exists(self, file_path):
         """
