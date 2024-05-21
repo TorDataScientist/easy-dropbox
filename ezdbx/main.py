@@ -66,6 +66,7 @@ class EzDbx:
         self.dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN, timeout=300)
         self.entry_list = []
         self.current_path = '/'
+        self.cant_save_files = []
         self.output = True
     
     def ls(self, file_or_folder='all'):
@@ -303,6 +304,13 @@ class EzDbx:
         for entry in entries:
             print(entry.path_display)
 
+    def cant_savefile(self):
+        """
+        保存できなかったファイルのリストを返します。
+        :return: 保存できなかったファイルのリスト
+        """
+        return self.cant_save_files
+
     def _list_local_files(self, folder):
         """
         ローカルフォルダ内のファイルをリストします。
@@ -433,8 +441,12 @@ class EzDbx:
 
                         
     def _handle_unsupported_file(self, local_file, dropbox_path):
-        zip_path = local_file + '.zip'
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
-            zipf.write(local_file, os.path.basename(local_file))
-        self.upload(zip_path, os.path.dirname(dropbox_path), overwrite=True)
-        os.remove(zip_path)
+        try : 
+            zip_path = local_file + '.zip'
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                zipf.write(local_file, os.path.basename(local_file))
+            self.upload(zip_path, os.path.dirname(dropbox_path), overwrite=True)
+            os.remove(zip_path)
+        except Exception as e:
+            print(f'{local_file} は保存できませんでした。保存できなかったファイルを確認する場合は cant_savefile メソッドを参照してください。')
+            self.cant_save_files.append(local_file)
