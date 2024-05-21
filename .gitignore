@@ -7,3 +7,10 @@ __pycache__/
 *.egg-info/
 
 backup.py
+
+Dockerfile
+Docker-compose.yaml
+
+test.ipynb
+test.py
+test**
