@@ -242,7 +242,10 @@ class EzDbx:
 
     def cleanup_local_files(self, local_folder, dropbox_folder):
         """
-        保存に成功したファイルをローカルから削除します。
+        ローカルフォルダの内容をチェックし、Dropboxに存在する場合はローカルから削除します。
+        また、空のフォルダも削除します。
+        :param local_folder: ローカルフォルダのパス
+        :param dropbox_folder: Dropboxフォルダのパス
         """
         # ローカルファイルリストの取得
         local_files = self._list_local_files(local_folder)
@@ -250,18 +253,21 @@ class EzDbx:
         # Dropbox内のファイルリストの取得
         dropbox_files, _ = self._list_dropbox_files_and_folders(dropbox_folder, 'file')
 
-        # ローカルファイルリストとDropboxファイルリストの差分を取得
+        # ローカルファイルリストとDropboxファイルリストの差分を取得し、ファイルを削除
         for local_file in local_files:
             relative_path = os.path.relpath(local_file, local_folder)
-            dropbox_path = os.path.join(dropbox_folder, relative_path)
-            dropbox_path = os.path.normpath(dropbox_path)
+            dropbox_path = os.path.join(dropbox_folder, relative_path).replace(os.sep, '/')
             
             if dropbox_path in dropbox_files:
                 try:
-                    os.remove(local_file)
-                    print(f'{local_file} was successfully deleted from local storage.')
+                    if os.path.isfile(local_file):
+                        os.remove(local_file)
+                        print(f'{local_file} was successfully deleted from local storage.')
                 except Exception as e:
                     print(f'Error deleting {local_file}: {e}')
+
+        # 空のフォルダを再帰的に削除
+        self._remove_empty_dirs(local_folder)
 
     def check_exists(self, file_path):
         """
@@ -335,6 +341,29 @@ class EzDbx:
         :return: 保存できなかったファイルのリスト
         """
         return self.cant_save_files
+    
+    def _remove_empty_dirs(self, root_dir):
+        """
+        指定されたフォルダ内を探索し、最も深い階層から空のフォルダを再帰的に削除するメソッド。
+        :param root_dir: ルートディレクトリのパス
+        """
+        # ディレクトリ内の全ての項目をリスト
+        items = os.listdir(root_dir)
+        
+        # 各項目をチェック
+        for item in items:
+            item_path = os.path.join(root_dir, item)
+            # 項目がディレクトリの場合、再帰的に呼び出し
+            if os.path.isdir(item_path):
+                self._remove_empty_dirs(item_path)
+        
+        # フォルダが空であれば削除
+        try:
+            if not os.listdir(root_dir):
+                os.rmdir(root_dir)
+                print(f'削除されたフォルダ: {root_dir}')
+        except Exception as e:
+            print(f'Error deleting folder {root_dir}: {e}')
 
     def _list_local_files(self, folder):
         """
